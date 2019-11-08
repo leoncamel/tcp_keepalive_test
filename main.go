@@ -17,21 +17,6 @@ func main() {
 	app.Version = "0.0.1"
 
 	app.Flags = []cli.Flag{
-		cli.StringFlag{
-			Name:  "bind",
-			Value: "0.0.0.0",
-			Usage: "Bind host for server, default 0.0.0.0",
-		},
-		cli.StringFlag{
-			Name:  "connect",
-			Value: "127.0.0.1",
-			Usage: "Connect to host for client, default 127.0.0.1",
-		},
-		cli.IntFlag{
-			Name:  "port",
-			Value: 8081,
-			Usage: "Port to listen/connect",
-		},
 		cli.BoolFlag{
 			Name:  "keepalive",
 			Usage: "set keepalive or not",
@@ -43,11 +28,48 @@ func main() {
 		},
 	}
 
+	server_flags := []cli.Flag{
+		cli.StringFlag{
+			Name:  "bind",
+			Value: "0.0.0.0",
+			Usage: "Bind host for server, default 0.0.0.0",
+		},
+		cli.IntFlag{
+			Name:  "port",
+			Value: 8081,
+			Usage: "Port to listen/connect",
+		},
+		cli.StringFlag{
+			Name:  "hello-server",
+			Value: "hello-server string",
+			Usage: "hello-server string",
+		},
+	}
+
+	client_flags := []cli.Flag{
+		cli.StringFlag{
+			Name:  "connect",
+			Value: "127.0.0.1",
+			Usage: "Connect to host for client, default 127.0.0.1",
+		},
+		cli.IntFlag{
+			Name:  "port",
+			Value: 8081,
+			Usage: "Port to listen/connect",
+		},
+		cli.StringFlag{
+			Name:  "hello-client",
+			Value: "hello-client string",
+			Usage: "hello-client string",
+		},
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:    "server",
 			Aliases: []string{"s"},
 			Usage:   "run as server",
+			Flags:   server_flags,
 			Action: func(c *cli.Context) error {
 				fmt.Println("added task: ", c.Args(), c.GlobalBool("keepalive"))
 				main_server(c)
@@ -58,6 +80,7 @@ func main() {
 			Name:    "client",
 			Aliases: []string{"c"},
 			Usage:   "run as client",
+			Flags:   client_flags,
 			Action: func(c *cli.Context) error {
 				fmt.Println("completed task: ", c.Args())
 				main_client(c)
@@ -74,7 +97,7 @@ func main() {
 
 func main_server(c *cli.Context) {
 
-	listenAddr := fmt.Sprintf("%s:%d", c.GlobalString("bind"), c.GlobalInt("port"))
+	listenAddr := fmt.Sprintf("%s:%d", c.String("bind"), c.Int("port"))
 	log.Println("Launching server... on addr ", listenAddr)
 
 	// listen on all interfaces
@@ -115,7 +138,7 @@ func main_server(c *cli.Context) {
 
 func main_client(c *cli.Context) {
 
-	connectAddr := fmt.Sprintf("%s:%d", c.GlobalString("connect"), c.GlobalInt("port"))
+	connectAddr := fmt.Sprintf("%s:%d", c.String("connect"), c.Int("port"))
 	log.Println("Launching Client to addr ", connectAddr)
 
 	// connect to this socket
