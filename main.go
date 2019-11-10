@@ -6,9 +6,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
 
 	"github.com/urfave/cli"
 )
@@ -16,6 +16,15 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Version = "0.0.1"
+	app.Compiled = time.Now()
+	app.Authors = []cli.Author{
+		cli.Author{
+			Name:  "Xiaolin Zhang",
+			Email: "leoncamel@gmail.com",
+		},
+	}
+	app.Copyright = "(c) 2019 Xiaolin Zhang"
+	app.Usage = "An tiny program for testing TCP keepalive"
 
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
@@ -215,7 +224,6 @@ func data_from_seq(seq_delay_defs string) chan string {
 	c := make(chan string)
 
 	go func() {
-		// for i := 0; i < 10; i++ {
 		for idx, delay_str := range delays_array {
 			fmt.Println(idx, delay_str)
 			delay, _ := strconv.ParseInt(delay_str, 10, 32)
