@@ -15,7 +15,7 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Version = "0.0.1"
+	app.Version = "0.0.2"
 	app.Compiled = time.Now()
 	app.Authors = []cli.Author{
 		cli.Author{
