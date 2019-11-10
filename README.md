@@ -38,3 +38,8 @@ ssh -o ServerAliveInterval=5 -o ServerAliveCountMax=1 $HOST
 ## TODO
 
 - [ ] Scripts for checking conn for non-underlay address(`10.*.*.*`)
+
+## Reference
+
+- http://tldp.org/HOWTO/TCP-Keepalive-HOWTO/overview.html
+- https://superuser.com/questions/240456/how-to-interpret-the-output-of-netstat-o-netstat-timers
