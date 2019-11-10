@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"strconv"
 
 	"github.com/urfave/cli"
 )
@@ -56,6 +57,15 @@ func main() {
 			Name:  "port",
 			Value: 8081,
 			Usage: "Port to listen/connect",
+		},
+		cli.BoolFlag{
+			Name:  "interactive,i",
+			Usage: "Run client interactive from stdin",
+		},
+		cli.StringFlag{
+			Name:  "seq",
+			Value: "1000,1000,1000",
+			Usage: "Generate with specific delay, in ms",
 		},
 		cli.StringFlag{
 			Name:  "hello-client",
@@ -158,20 +168,64 @@ func main_client(c *cli.Context) {
 		tcpConn.SetKeepAlive(false)
 	}
 
-	for {
-		// read in input from stdin
-		reader := bufio.NewReader(os.Stdin)
-		fmt.Println("Text to send: ")
-		text, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatal(err)
-		}
+	var data_channel chan string
+
+	if c.Bool("interactive") {
+		data_channel = data_from_stdin()
+	} else {
+		data_channel = data_from_seq(c.String("seq"))
+	}
+
+	for text := range data_channel {
+		data_to_send := "DATA:" + time.Now().Format("2006-01-02-15 04:05") + " " + text + "\n"
+
 		// send to socket
-		fmt.Fprintf(conn, text+"\n")
+		fmt.Fprintf(conn, data_to_send)
 		// tcpConn.Write(text + "\n")
 
 		// listen for reply
 		message, _ := bufio.NewReader(conn).ReadString('\n')
 		log.Println("Message from server: " + message)
 	}
+}
+
+func data_from_stdin() chan string {
+	c := make(chan string)
+
+	go func() {
+		for {
+			// read in input from stdin
+			reader := bufio.NewReader(os.Stdin)
+			fmt.Println("Text to send: ")
+			text, err := reader.ReadString('\n')
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			c <- text
+		}
+	}()
+
+	return c
+}
+
+func data_from_seq(seq_delay_defs string) chan string {
+	delays_array := strings.Split(seq_delay_defs, ",")
+
+	c := make(chan string)
+
+	go func() {
+		// for i := 0; i < 10; i++ {
+		for idx, delay_str := range delays_array {
+			fmt.Println(idx, delay_str)
+			delay, _ := strconv.ParseInt(delay_str, 10, 32)
+			fmt.Printf("%T\n", delay)
+			time.Sleep(time.Duration(delay) * time.Millisecond)
+			c <- fmt.Sprint(idx, " ", delay_str, "\n")
+		}
+
+		close(c)
+	}()
+
+	return c
 }
