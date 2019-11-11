@@ -133,36 +133,40 @@ func main_server(c *cli.Context) {
 	// listen on all interfaces
 	ln, _ := net.Listen("tcp", listenAddr)
 
-	// accept connection on port
-	conn, _ := ln.Accept()
-	tcpConn := conn.(*net.TCPConn)
-
-	if c.GlobalBool("keepalive") {
-		log.Println("TCP-KEEPALIVE :: Enable tcp-keepalive")
-		tcpConn.SetKeepAlive(true)
-
-		durStr := fmt.Sprintf("%ds", c.GlobalInt("keepalive-time"))
-		log.Println("TCP-KEEPALIVE :: Set tcp socket keepalive as ", durStr)
-		m, _ := time.ParseDuration(durStr)
-		tcpConn.SetKeepAlivePeriod(m)
-	} else {
-		log.Println("Disable tcp-keepalive")
-		tcpConn.SetKeepAlive(false)
-	}
-
-	// run loop forever (or until ctrl-c)
 	for {
-		// will listen for message to process ending in newline (\n)
-		message, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			log.Fatal(err)
+		// accept connection on port
+		conn, _ := ln.Accept()
+		tcpConn := conn.(*net.TCPConn)
+		log.Println("Accept new incoming client...")
+
+		if c.GlobalBool("keepalive") {
+			log.Println("TCP-KEEPALIVE :: Enable tcp-keepalive")
+			tcpConn.SetKeepAlive(true)
+
+			durStr := fmt.Sprintf("%ds", c.GlobalInt("keepalive-time"))
+			log.Println("TCP-KEEPALIVE :: Set tcp socket keepalive as ", durStr)
+			m, _ := time.ParseDuration(durStr)
+			tcpConn.SetKeepAlivePeriod(m)
+		} else {
+			log.Println("Disable tcp-keepalive")
+			tcpConn.SetKeepAlive(false)
 		}
-		// output message received
-		log.Println("Message Received:", string(message))
-		// sample process for string received
-		newmessage := strings.ToUpper(message)
-		// send new string back to client
-		conn.Write([]byte(newmessage + "\n"))
+
+		// run loop forever (or until ctrl-c)
+		for {
+			// will listen for message to process ending in newline (\n)
+			message, err := bufio.NewReader(conn).ReadString('\n')
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			// output message received
+			log.Println("Message Received:", string(message))
+			// sample process for string received
+			newmessage := strings.ToUpper(message)
+			// send new string back to client
+			conn.Write([]byte(newmessage + "\n"))
+		}
 	}
 }
 
@@ -249,7 +253,7 @@ func data_from_seq(seq_delay_defs string) chan string {
 
 			// fmt.Println("iternum %v", iternum)
 			delay, _ := strconv.ParseInt(retMap["delay"], 10, 32)
-			for i := 0; i < int(iternum) + 1; i++ {
+			for i := 0; i < int(iternum)+1; i++ {
 				time.Sleep(time.Duration(delay) * time.Millisecond)
 				log.Printf("Delay idx:%8d\n", i)
 			}
