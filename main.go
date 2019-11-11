@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -74,7 +75,7 @@ func main() {
 		cli.StringFlag{
 			Name:  "seq",
 			Value: "1000,1000,1000",
-			Usage: "Generate with specific delay, in ms",
+			Usage: "Generate with specific delay, in ms. '100{3}' means delay interval is 100ms, delay for 3 iterations",
 		},
 		cli.StringFlag{
 			Name:  "hello-client",
@@ -103,6 +104,16 @@ func main() {
 			Action: func(c *cli.Context) error {
 				fmt.Println("completed task: ", c.Args())
 				main_client(c)
+				return nil
+			},
+		},
+		{
+			Name:    "test",
+			Aliases: []string{"t"},
+			Usage:   "test",
+			Action: func(c *cli.Context) error {
+				fmt.Println("Run test command, with args", c.Args())
+				main_test(c.Args()[0])
 				return nil
 			},
 		},
@@ -191,6 +202,7 @@ func main_client(c *cli.Context) {
 		// send to socket
 		fmt.Fprintf(conn, data_to_send)
 		// tcpConn.Write(text + "\n")
+		log.Printf("Msg sent: '%s'", data_to_send)
 
 		// listen for reply
 		message, _ := bufio.NewReader(conn).ReadString('\n')
@@ -225,8 +237,22 @@ func data_from_seq(seq_delay_defs string) chan string {
 
 	go func() {
 		for idx, delay_str := range delays_array {
-			delay, _ := strconv.ParseInt(delay_str, 10, 32)
-			time.Sleep(time.Duration(delay) * time.Millisecond)
+			retMap := parseDelay(delay_str)
+			var iternum int64 = 0
+			var err error
+			if retMap["iternum"] != "" {
+				iternum, err = strconv.ParseInt(retMap["iternum"], 10, 32)
+				if err != nil {
+					iternum = 0
+				}
+			}
+
+			// fmt.Println("iternum %v", iternum)
+			delay, _ := strconv.ParseInt(retMap["delay"], 10, 32)
+			for i := 0; i < int(iternum) + 1; i++ {
+				time.Sleep(time.Duration(delay) * time.Millisecond)
+				log.Printf("Delay idx:%8d\n", i)
+			}
 			c <- fmt.Sprint(idx, " ", delay_str, "\n")
 		}
 
@@ -234,4 +260,36 @@ func data_from_seq(seq_delay_defs string) chan string {
 	}()
 
 	return c
+}
+
+func main_test(arg string) {
+	fmt.Println("hello from main_test")
+	fmt.Println(arg)
+	delays_array := strings.Split(arg, ",")
+	fmt.Println(delays_array)
+
+	for idx, delay_str := range delays_array {
+		fmt.Println(idx, delay_str)
+		retMap := parseDelay(delay_str)
+		fmt.Println(retMap)
+		fmt.Println(retMap["delay"], retMap["iternum"])
+		if retMap["iternum"] != "" {
+			fmt.Println("not nil")
+		}
+	}
+}
+
+func parseDelay(arg string) (paramsMap map[string]string) {
+
+	var compRegEx = regexp.MustCompile(`(?P<delay>\d+)({(?P<iternum>\d+)?})?`)
+	match := compRegEx.FindStringSubmatch(arg)
+
+	paramsMap = make(map[string]string)
+	for i, name := range compRegEx.SubexpNames() {
+		if i > 0 && i <= len(match) {
+			paramsMap[name] = match[i]
+		}
+	}
+
+	return
 }
