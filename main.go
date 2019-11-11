@@ -186,7 +186,7 @@ func main_client(c *cli.Context) {
 	}
 
 	for text := range data_channel {
-		data_to_send := "DATA:" + time.Now().Format("2006-01-02-15 04:05") + " " + text + "\n"
+		data_to_send := "DATA:" + time.Now().Format("2006-01-02-15 04:05") + ": " + text + "\n"
 
 		// send to socket
 		fmt.Fprintf(conn, data_to_send)
@@ -225,9 +225,7 @@ func data_from_seq(seq_delay_defs string) chan string {
 
 	go func() {
 		for idx, delay_str := range delays_array {
-			fmt.Println(idx, delay_str)
 			delay, _ := strconv.ParseInt(delay_str, 10, 32)
-			fmt.Printf("%T\n", delay)
 			time.Sleep(time.Duration(delay) * time.Millisecond)
 			c <- fmt.Sprint(idx, " ", delay_str, "\n")
 		}
