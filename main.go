@@ -255,9 +255,9 @@ func data_from_seq(seq_delay_defs string) chan string {
 			delay, _ := strconv.ParseInt(retMap["delay"], 10, 32)
 			for i := 0; i < int(iternum)+1; i++ {
 				time.Sleep(time.Duration(delay) * time.Millisecond)
-				log.Printf("Delay idx:%8d\n", i)
+				log.Printf("Send message idx:%8d\n", i)
+				c <- fmt.Sprint(idx, " ", delay_str, "\n")
 			}
-			c <- fmt.Sprint(idx, " ", delay_str, "\n")
 		}
 
 		close(c)
